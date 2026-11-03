@@ -24,40 +24,34 @@ jobs:
           ref: main
           fetch-depth: 0
           token: ${{ secrets.FORK_SYNC_TOKEN }}
+          persist-credentials: true
 
-      - name: Merge upstream main
-        env:
-          GH_TOKEN: ${{ secrets.FORK_SYNC_TOKEN }}
-        shell: bash
+      - name: Configure Git
         run: |
-          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
 
-          REPO="$GITHUB_REPOSITORY"
-          UPSTREAM="cmliu/edgetunnel"
-
-          echo "Fork: $REPO"
-          echo "Upstream: $UPSTREAM"
-
-          # Fetch upstream
+      - name: Fetch upstream
+        run: |
           git remote add upstream \
-            "https://github.com/${UPSTREAM}.git"
+            https://github.com/cmliu/edgetunnel.git
 
           git fetch upstream main
 
-          # Check whether already synchronized
+      - name: Merge upstream
+        run: |
+          set -euo pipefail
+
           if git merge-base --is-ancestor upstream/main HEAD; then
             echo "Already up to date."
             exit 0
           fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email \
-            "41898282+github-actions[bot]@users.noreply.github.com"
-
-          # Merge upstream changes
           git merge --no-edit upstream/main
 
-          # Push changes to fork
+      - name: Push to fork
+        run: |
           git push origin HEAD:main
 
-          echo "Upstream merge and push completed."
+          echo "Upstream synchronization successful."
