@@ -18,7 +18,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Sync fork with upstream
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.FORK_SYNC_TOKEN }}
+
+      - name: Merge upstream main
         env:
           GH_TOKEN: ${{ secrets.FORK_SYNC_TOKEN }}
         shell: bash
@@ -26,28 +33,31 @@ jobs:
           set -euo pipefail
 
           REPO="$GITHUB_REPOSITORY"
-
-          # Automatically identify the parent repository
           UPSTREAM="cmliu/edgetunnel"
 
           echo "Fork: $REPO"
           echo "Upstream: $UPSTREAM"
 
-          # Get current commit IDs
-          FORK_SHA=$(gh api "repos/$REPO/commits/main" \
-            --jq '.sha')
+          # Fetch upstream
+          git remote add upstream \
+            "https://github.com/${UPSTREAM}.git"
 
-          UPSTREAM_SHA=$(gh api "repos/$UPSTREAM/commits/main" \
-            --jq '.sha')
+          git fetch upstream main
 
-          if [[ "$FORK_SHA" == "$UPSTREAM_SHA" ]]; then
-            echo "Already up to date. No deployment needed."
+          # Check whether already synchronized
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo "Already up to date."
             exit 0
           fi
 
-          # Sync main branch without force overwrite
-          gh repo sync "$REPO" \
-            --source "$UPSTREAM" \
-            --branch main
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
 
-          echo "Fork synchronization completed."
+          # Merge upstream changes
+          git merge --no-edit upstream/main
+
+          # Push changes to fork
+          git push origin HEAD:main
+
+          echo "Upstream merge and push completed."
