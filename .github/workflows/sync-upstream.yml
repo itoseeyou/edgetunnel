@@ -1,0 +1,60 @@
+
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-upstream-main
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Sync fork with upstream
+        env:
+          GH_TOKEN: ${{ secrets.FORK_SYNC_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          REPO="$GITHUB_REPOSITORY"
+
+          # Automatically identify the parent repository
+          UPSTREAM=$(gh repo view "$REPO" \
+            --json parent \
+            --jq '.parent.nameWithOwner // ""')
+
+          if [[ -z "$UPSTREAM" ]]; then
+            echo "ERROR: Upstream repository not found"
+            exit 1
+          fi
+
+          echo "Fork: $REPO"
+          echo "Upstream: $UPSTREAM"
+
+          # Get current commit IDs
+          FORK_SHA=$(gh api "repos/$REPO/commits/main" \
+            --jq '.sha')
+
+          UPSTREAM_SHA=$(gh api "repos/$UPSTREAM/commits/main" \
+            --jq '.sha')
+
+          if [[ "$FORK_SHA" == "$UPSTREAM_SHA" ]]; then
+            echo "Already up to date. No deployment needed."
+            exit 0
+          fi
+
+          # Sync main branch without force overwrite
+          gh repo sync "$REPO" \
+            --source "$UPSTREAM" \
+            --branch main
+
+          echo "Fork synchronization completed."
