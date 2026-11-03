@@ -28,14 +28,7 @@ jobs:
           REPO="$GITHUB_REPOSITORY"
 
           # Automatically identify the parent repository
-          UPSTREAM=$(gh repo view "$REPO" \
-            --json parent \
-            --jq '.parent.nameWithOwner // ""')
-
-          if [[ -z "$UPSTREAM" ]]; then
-            echo "ERROR: Upstream repository not found"
-            exit 1
-          fi
+          UPSTREAM="cmliu/edgetunnel"
 
           echo "Fork: $REPO"
           echo "Upstream: $UPSTREAM"
