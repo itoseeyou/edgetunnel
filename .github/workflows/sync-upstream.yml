@@ -1,5 +1,4 @@
 
-
 name: Sync Upstream
 
 on:
@@ -20,11 +19,11 @@ jobs:
 
     steps:
       - name: Checkout fork
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: main
           fetch-depth: 0
-          token: ${{ secrets.FORK_SYNC_TOKEN }}
+          token: ${{ github.token }}
           persist-credentials: true
 
       - name: Configure Git
@@ -53,6 +52,6 @@ jobs:
 
       - name: Push to fork
         run: |
+          set -euo pipefail
           git push origin HEAD:main
-
           echo "Upstream synchronization successful."
