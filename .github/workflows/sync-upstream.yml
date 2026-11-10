@@ -1,4 +1,5 @@
-
+permissions:
+  contents: write
 name: Sync Upstream
 
 on:
