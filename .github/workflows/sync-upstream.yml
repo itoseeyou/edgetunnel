@@ -1,5 +1,5 @@
-permissions:
-  contents: write
+
+
 name: Sync Upstream
 
 on:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: sync-upstream-main
